@@ -207,6 +207,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--output_filter',
+    help="Output filter"
+)
+
+parser.add_argument(
     '--timeout',
     type=PositiveInt,
     help='Timeout for CTest'
@@ -249,12 +254,12 @@ else:
   build_tag = polly_toolchain
 
 """Tune environment"""
-if toolchain_entry.name == 'mingw' or toolchain_entry.name == 'mingw-c11':
+if toolchain_entry.name.startswith('mingw'):
   mingw_path = os.getenv("MINGW_PATH")
   detail.verify_mingw_path.verify(mingw_path)
   os.environ['PATH'] = "{};{}".format(mingw_path, os.getenv('PATH'))
 
-if toolchain_entry.name == 'msys':
+if toolchain_entry.name.startswith('msys'):
   msys_path = os.getenv("MSYS_PATH")
   detail.verify_msys_path.verify(msys_path)
   os.environ['PATH'] = "{};{}".format(msys_path, os.getenv('PATH'))
@@ -385,6 +390,9 @@ if (args.config and not toolchain_entry.multiconfig) or args.config_all:
 if toolchain_entry.generator:
   generate_command.append('-G{}'.format(toolchain_entry.generator))
 
+if toolchain_entry.toolset:
+  generate_command.append('-T{}'.format(toolchain_entry.toolset))
+
 if toolchain_entry.xp:
   toolset = 'v{}0_xp'.format(toolchain_entry.vs_version)
   generate_command.append('-T{}'.format(toolset))
@@ -415,12 +423,12 @@ if args.fwd != None:
 
 if args.config_all:
   generate_command.append("-DHUNTER_CONFIGURATION_TYPES={}".format(args.config_all))
-    
+
 timer = detail.timer.Timer()
 
 timer.start('Generate')
 detail.generate_command.run(
-    generate_command, build_dir, polly_temp_dir, args.reconfig, logging
+    generate_command, build_dir, polly_temp_dir, args.reconfig, logging, args.output_filter
 )
 timer.stop()
 
@@ -458,10 +466,22 @@ if args.jobs:
 if args.keep_going:
   if toolchain_entry.is_make:
     build_command.append('-k') ## keep going
-    
+
 if not args.nobuild:
   timer.start('Build')
-  detail.call.call(build_command, logging, sleep=1)
+
+  if toolchain_entry.is_xcode:
+    # Workaround for https://gitlab.kitware.com/cmake/cmake/issues/17851
+    zero_check_command = [
+        cmake_bin,
+        '--build',
+        build_dir,
+        '--target',
+        'ZERO_CHECK'
+    ]
+    detail.call.call(zero_check_command, logging, sleep=1)
+
+  detail.call.call(build_command, logging, sleep=1, output_filter=args.output_filter)
   timer.stop()
 
   if args.archive:
