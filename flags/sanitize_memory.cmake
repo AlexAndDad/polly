@@ -11,8 +11,11 @@ include(polly_add_cache_flag)
 
 polly_add_cache_flag(CMAKE_CXX_FLAGS "-fsanitize=memory")
 polly_add_cache_flag(CMAKE_CXX_FLAGS "-fsanitize-memory-track-origins")
+polly_add_cache_flag(CMAKE_CXX_FLAGS "-fsanitize-blacklist=/home/ahodges/blacklist.txt")
+
 polly_add_cache_flag(CMAKE_CXX_FLAGS "-g")
 
 polly_add_cache_flag(CMAKE_C_FLAGS "-fsanitize=memory")
 polly_add_cache_flag(CMAKE_C_FLAGS "-fsanitize-memory-track-origins")
+polly_add_cache_flag(CMAKE_C_FLAGS "-fsanitize-blacklist=/home/ahodges/blacklist.txt")
 polly_add_cache_flag(CMAKE_C_FLAGS "-g")
